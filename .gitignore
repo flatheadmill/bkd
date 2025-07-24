@@ -1,0 +1,10 @@
+# Rust/Cargo generated files
+/target/
+Cargo.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
