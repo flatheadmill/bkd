@@ -181,62 +181,203 @@ fn insert_node<P: Point, T, L: NodeLinker<P, T>>(
 // struct KDTree<P: Point, T> { ... }
 
 fn main() {
-    // Test KD-tree insertion using our "tree tools" approach
+    println!("KD-tree implementation with NodeLinker abstraction");
+    println!("Run `cargo test` to execute the test suite");
+}
 
-    // Create multiple bounding box nodes for testing
-    let mut nodes = vec![
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper function to create a test node
+    fn create_test_node(
+        xmin: f64,
+        ymin: f64,
+        xmax: f64,
+        ymax: f64,
+        data: u32,
+    ) -> Node<BoundingBox, u32> {
         Node {
-            point: BoundingBox::new(5.0, 5.0, 6.0, 6.0), // Root
-            data: 1u32,
+            point: BoundingBox::new(xmin, ymin, xmax, ymax),
+            data,
             left: None,
             right: None,
-        },
-        Node {
-            point: BoundingBox::new(2.0, 2.0, 3.0, 3.0), // Should go left (xmin < 5.0)
-            data: 2u32,
-            left: None,
-            right: None,
-        },
-        Node {
-            point: BoundingBox::new(8.0, 8.0, 9.0, 9.0), // Should go right (xmin >= 5.0)
-            data: 3u32,
-            left: None,
-            right: None,
-        },
-    ];
-
-    let mut linker = InMemoryLinker;
-
-    // Get node references
-    let root_ref = &mut nodes[0] as *mut Node<BoundingBox, u32>;
-    let node2_ref = &mut nodes[1] as *mut Node<BoundingBox, u32>;
-    let node3_ref = &mut nodes[2] as *mut Node<BoundingBox, u32>;
-
-    // Build tree using our insertion algorithm
-    let root = insert_node(&mut linker, None, root_ref, 0);
-    insert_node(&mut linker, Some(root), node2_ref, 0);
-    insert_node(&mut linker, Some(root), node3_ref, 0);
-
-    // Verify tree structure
-    println!("Root: data={}", linker.get_data(root));
-
-    if let Some(left) = linker.get_left(root) {
-        let left_point = linker.get_point(left);
-        println!(
-            "  Left child: xmin={}, data={}",
-            left_point.xmin,
-            linker.get_data(left)
-        );
+        }
     }
 
-    if let Some(right) = linker.get_right(root) {
-        let right_point = linker.get_point(right);
-        println!(
-            "  Right child: xmin={}, data={}",
-            right_point.xmin,
-            linker.get_data(right)
-        );
+    #[test]
+    fn test_bounding_box_point_trait() {
+        let bbox = BoundingBox::new(1.0, 2.0, 3.0, 4.0);
+
+        assert_eq!(bbox.get_dimension(0), 1.0); // xmin
+        assert_eq!(bbox.get_dimension(1), 2.0); // ymin
+        assert_eq!(bbox.get_dimension(2), 3.0); // xmax
+        assert_eq!(bbox.get_dimension(3), 4.0); // ymax
+        assert_eq!(bbox.dimensions(), 4);
     }
 
-    println!("KD-tree insertion working with NodeLinker abstraction!");
+    #[test]
+    fn test_bounding_box_spatial_operations() {
+        let bbox1 = BoundingBox::new(1.0, 1.0, 3.0, 3.0);
+        let bbox2 = BoundingBox::new(2.0, 2.0, 4.0, 4.0); // Overlaps bbox1
+        let bbox3 = BoundingBox::new(0.0, 0.0, 5.0, 5.0); // Contains bbox1
+        let bbox4 = BoundingBox::new(10.0, 10.0, 12.0, 12.0); // No overlap
+
+        // Test overlaps
+        assert!(bbox1.overlaps(&bbox2));
+        assert!(bbox1.overlaps(&bbox3));
+        assert!(!bbox1.overlaps(&bbox4));
+
+        // Test is_within
+        assert!(bbox1.is_within(&bbox3));
+        assert!(!bbox1.is_within(&bbox2));
+        assert!(!bbox1.is_within(&bbox4));
+    }
+
+    #[test]
+    fn test_single_node_insertion() {
+        let mut nodes = vec![create_test_node(5.0, 5.0, 6.0, 6.0, 1)];
+        let mut linker = InMemoryLinker;
+        let root_ref = &mut nodes[0] as *mut Node<BoundingBox, u32>;
+
+        let root = insert_node(&mut linker, None, root_ref, 0);
+
+        // Root should be the node itself
+        assert_eq!(linker.get_data(root), &1);
+        assert_eq!(linker.get_point(root).xmin, 5.0);
+        assert!(linker.get_left(root).is_none());
+        assert!(linker.get_right(root).is_none());
+    }
+
+    #[test]
+    fn test_basic_tree_construction() {
+        // Create test nodes - same as original main function test
+        let mut nodes = vec![
+            create_test_node(5.0, 5.0, 6.0, 6.0, 1), // Root
+            create_test_node(2.0, 2.0, 3.0, 3.0, 2), // Should go left (xmin < 5.0)
+            create_test_node(8.0, 8.0, 9.0, 9.0, 3), // Should go right (xmin >= 5.0)
+        ];
+
+        let mut linker = InMemoryLinker;
+
+        // Get node references
+        let root_ref = &mut nodes[0] as *mut Node<BoundingBox, u32>;
+        let node2_ref = &mut nodes[1] as *mut Node<BoundingBox, u32>;
+        let node3_ref = &mut nodes[2] as *mut Node<BoundingBox, u32>;
+
+        // Build tree
+        let root = insert_node(&mut linker, None, root_ref, 0);
+        insert_node(&mut linker, Some(root), node2_ref, 0);
+        insert_node(&mut linker, Some(root), node3_ref, 0);
+
+        // Verify root
+        assert_eq!(linker.get_data(root), &1);
+        assert_eq!(linker.get_point(root).xmin, 5.0);
+
+        // Verify left child (should be node with data=2, xmin=2.0)
+        let left = linker.get_left(root).expect("Root should have left child");
+        assert_eq!(linker.get_data(left), &2);
+        assert_eq!(linker.get_point(left).xmin, 2.0);
+
+        // Verify right child (should be node with data=3, xmin=8.0)
+        let right = linker
+            .get_right(root)
+            .expect("Root should have right child");
+        assert_eq!(linker.get_data(right), &3);
+        assert_eq!(linker.get_point(right).xmin, 8.0);
+    }
+
+    #[test]
+    fn test_dimensional_alternation() {
+        // Create nodes that will test different dimensions
+        let mut nodes = vec![
+            create_test_node(5.0, 5.0, 6.0, 6.0, 1), // Root (splits on dim 0: xmin)
+            create_test_node(2.0, 8.0, 3.0, 9.0, 2), // Left child (splits on dim 1: ymin)
+            create_test_node(1.0, 2.0, 1.5, 2.5, 3), // Should go left-left (ymin < 8.0)
+        ];
+
+        let mut linker = InMemoryLinker;
+
+        let root_ref = &mut nodes[0] as *mut Node<BoundingBox, u32>;
+        let node2_ref = &mut nodes[1] as *mut Node<BoundingBox, u32>;
+        let node3_ref = &mut nodes[2] as *mut Node<BoundingBox, u32>;
+
+        // Build tree
+        let root = insert_node(&mut linker, None, root_ref, 0);
+        insert_node(&mut linker, Some(root), node2_ref, 0);
+        insert_node(&mut linker, Some(root), node3_ref, 0);
+
+        // Navigate to left child (data=2)
+        let left = linker.get_left(root).expect("Root should have left child");
+        assert_eq!(linker.get_data(left), &2);
+
+        // Navigate to left-left child (data=3) - split on ymin dimension
+        let left_left = linker
+            .get_left(left)
+            .expect("Left child should have left child");
+        assert_eq!(linker.get_data(left_left), &3);
+        assert_eq!(linker.get_point(left_left).ymin, 2.0);
+    }
+
+    #[test]
+    fn test_deeper_tree_construction() {
+        // Create a more complex tree with 5 nodes
+        let mut nodes = vec![
+            create_test_node(5.0, 5.0, 6.0, 6.0, 1), // Root
+            create_test_node(2.0, 2.0, 3.0, 3.0, 2), // Left
+            create_test_node(8.0, 8.0, 9.0, 9.0, 3), // Right
+            create_test_node(1.0, 1.0, 1.5, 1.5, 4), // Left-Left
+            create_test_node(9.0, 9.0, 9.5, 9.5, 5), // Right-Right
+        ];
+
+        let mut linker = InMemoryLinker;
+
+        // Build tree
+        let mut node_refs = Vec::new();
+        for node in &mut nodes {
+            node_refs.push(node as *mut Node<BoundingBox, u32>);
+        }
+
+        let root = insert_node(&mut linker, None, node_refs[0], 0);
+        for &node_ref in &node_refs[1..] {
+            insert_node(&mut linker, Some(root), node_ref, 0);
+        }
+
+        // Verify tree structure
+        assert_eq!(linker.get_data(root), &1);
+
+        let left = linker.get_left(root).unwrap();
+        assert_eq!(linker.get_data(left), &2);
+
+        let right = linker.get_right(root).unwrap();
+        assert_eq!(linker.get_data(right), &3);
+
+        let left_left = linker.get_left(left).unwrap();
+        assert_eq!(linker.get_data(left_left), &4);
+
+        let right_right = linker.get_right(right).unwrap();
+        assert_eq!(linker.get_data(right_right), &5);
+    }
+
+    #[test]
+    fn test_inmemory_linker_operations() {
+        let mut nodes = vec![
+            create_test_node(1.0, 1.0, 2.0, 2.0, 1),
+            create_test_node(3.0, 3.0, 4.0, 4.0, 2),
+        ];
+
+        let mut linker = InMemoryLinker;
+        let parent_ref = &mut nodes[0] as *mut Node<BoundingBox, u32>;
+        let child_ref = &mut nodes[1] as *mut Node<BoundingBox, u32>;
+
+        // Test linking operations
+        linker.link_left(parent_ref, child_ref);
+
+        let linked_left = linker.get_left(parent_ref).unwrap();
+        assert_eq!(linker.get_data(linked_left), &2);
+        assert_eq!(linker.get_point(linked_left).xmin, 3.0);
+
+        // Test that right is still None
+        assert!(linker.get_right(parent_ref).is_none());
+    }
 }
