@@ -8,7 +8,12 @@ pub struct BoundingBox {
 
 impl BoundingBox {
     pub fn new(xmin: f64, ymin: f64, xmax: f64, ymax: f64) -> Self {
-        BoundingBox { xmin, ymin, xmax, ymax }
+        BoundingBox {
+            xmin,
+            ymin,
+            xmax,
+            ymax,
+        }
     }
 
     // Get value for dimension (0=xmin, 1=ymin, 2=xmax, 3=ymax)
@@ -24,14 +29,18 @@ impl BoundingBox {
 
     // Check if this bounding box is fully within the query box
     pub fn is_within(&self, query: &BoundingBox) -> bool {
-        self.xmin >= query.xmin && self.xmax <= query.xmax &&
-        self.ymin >= query.ymin && self.ymax <= query.ymax
+        self.xmin >= query.xmin
+            && self.xmax <= query.xmax
+            && self.ymin >= query.ymin
+            && self.ymax <= query.ymax
     }
 
     // Check if this bounding box overlaps with the query box
     pub fn overlaps(&self, query: &BoundingBox) -> bool {
-        !(self.xmax < query.xmin || self.xmin > query.xmax ||
-          self.ymax < query.ymin || self.ymin > query.ymax)
+        !(self.xmax < query.xmin
+            || self.xmin > query.xmax
+            || self.ymax < query.ymin
+            || self.ymin > query.ymax)
     }
 
     // Compute union of two bounding boxes (enclosing box)
@@ -261,13 +270,24 @@ impl BoundingBoxKDTree {
         }
     }
 
-    fn render_node_svg(&self, node: &Node, depth: usize, bounds: &BoundingBox,
-                      svg_width: u32, svg_height: u32, svg: &mut String) {
+    fn render_node_svg(
+        &self,
+        node: &Node,
+        depth: usize,
+        bounds: &BoundingBox,
+        svg_width: u32,
+        svg_height: u32,
+        svg: &mut String,
+    ) {
         // Transform coordinates from world space to SVG space
-        let x1 = ((node.enclosing_box.xmin - bounds.xmin) / (bounds.xmax - bounds.xmin)) * svg_width as f64;
-        let y1 = ((bounds.ymax - node.enclosing_box.ymax) / (bounds.ymax - bounds.ymin)) * svg_height as f64; // Flip Y
-        let x2 = ((node.enclosing_box.xmax - bounds.xmin) / (bounds.xmax - bounds.xmin)) * svg_width as f64;
-        let y2 = ((bounds.ymax - node.enclosing_box.ymin) / (bounds.ymax - bounds.ymin)) * svg_height as f64; // Flip Y
+        let x1 = ((node.enclosing_box.xmin - bounds.xmin) / (bounds.xmax - bounds.xmin))
+            * svg_width as f64;
+        let y1 = ((bounds.ymax - node.enclosing_box.ymax) / (bounds.ymax - bounds.ymin))
+            * svg_height as f64; // Flip Y
+        let x2 = ((node.enclosing_box.xmax - bounds.xmin) / (bounds.xmax - bounds.xmin))
+            * svg_width as f64;
+        let y2 = ((bounds.ymax - node.enclosing_box.ymin) / (bounds.ymax - bounds.ymin))
+            * svg_height as f64; // Flip Y
 
         let width = x2 - x1;
         let height = y2 - y1;
@@ -276,7 +296,11 @@ impl BoundingBoxKDTree {
         svg.push_str(&format!(
             r#"<rect x="{:.1}" y="{:.1}" width="{:.1}" height="{:.1}" class="bbox depth-{}" />
 "#,
-            x1, y1, width, height, depth % 8
+            x1,
+            y1,
+            width,
+            height,
+            depth % 8
         ));
 
         // Add page ID text
@@ -298,8 +322,14 @@ impl BoundingBoxKDTree {
     }
 
     // Add a method to render a query box overlay
-    pub fn add_query_to_svg(&self, svg: &mut String, query_box: &BoundingBox,
-                           bounds: &BoundingBox, svg_width: u32, svg_height: u32) {
+    pub fn add_query_to_svg(
+        &self,
+        svg: &mut String,
+        query_box: &BoundingBox,
+        bounds: &BoundingBox,
+        svg_width: u32,
+        svg_height: u32,
+    ) {
         // Transform query coordinates to SVG space
         let x1 = ((query_box.xmin - bounds.xmin) / (bounds.xmax - bounds.xmin)) * svg_width as f64;
         let y1 = ((bounds.ymax - query_box.ymax) / (bounds.ymax - bounds.ymin)) * svg_height as f64;
@@ -314,7 +344,12 @@ impl BoundingBoxKDTree {
             r#"<rect x="{:.1}" y="{:.1}" width="{:.1}" height="{:.1}" class="query-box" />
 <text x="{:.1}" y="{:.1}" text-anchor="middle" class="page-text">Query</text>
 "#,
-            x1, y1, width, height, x1 + width / 2.0, y1 - 5.0
+            x1,
+            y1,
+            width,
+            height,
+            x1 + width / 2.0,
+            y1 - 5.0
         );
 
         if let Some(pos) = svg.rfind("</svg>") {
