@@ -56,8 +56,11 @@ impl BoundingBox {
 
 #[derive(Debug, Clone)]
 pub struct Node {
-    // Enclosing bounding box for all individual boxes in this node's page
-    pub enclosing_box: BoundingBox,
+    // Bounding box coordinates (merged from BoundingBox)
+    pub xmin: f64,
+    pub ymin: f64,
+    pub xmax: f64,
+    pub ymax: f64,
     // Page ID referencing external storage of individual bounding boxes
     pub page_id: u32,
     pub left: Option<Box<Node>>,
@@ -65,13 +68,53 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(enclosing_box: BoundingBox, page_id: u32) -> Self {
+    pub fn new(xmin: f64, ymin: f64, xmax: f64, ymax: f64, page_id: u32) -> Self {
         Node {
-            enclosing_box,
+            xmin,
+            ymin,
+            xmax,
+            ymax,
             page_id,
             left: None,
             right: None,
         }
+    }
+
+    // Convenience constructor from BoundingBox (for compatibility)
+    pub fn from_bounding_box(bbox: BoundingBox, page_id: u32) -> Self {
+        Node::new(bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax, page_id)
+    }
+
+    // Get value for dimension (0=xmin, 1=ymin, 2=xmax, 3=ymax)
+    pub fn get_dimension(&self, dim: usize) -> f64 {
+        match dim {
+            0 => self.xmin,
+            1 => self.ymin,
+            2 => self.xmax,
+            3 => self.ymax,
+            _ => panic!("Invalid dimension: {}", dim),
+        }
+    }
+
+    // Check if this node is fully within the query box
+    pub fn is_within(&self, query: &BoundingBox) -> bool {
+        self.xmin >= query.xmin
+            && self.xmax <= query.xmax
+            && self.ymin >= query.ymin
+            && self.ymax <= query.ymax
+    }
+
+    // Check if this node overlaps with the query box
+    pub fn overlaps(&self, query: &BoundingBox) -> bool {
+        !(self.xmax < query.xmin
+            || self.xmin > query.xmax
+            || self.ymax < query.ymin
+            || self.ymin > query.ymax)
+    }
+
+    // Convert to BoundingBox (for compatibility with existing APIs)
+    pub fn to_bounding_box(&self) -> BoundingBox {
+        BoundingBox::new(self.xmin, self.ymin, self.xmax, self.ymax)
     }
 
     pub fn set_left(&mut self, node: Node) {
@@ -110,7 +153,7 @@ impl BoundingBoxKDTree {
     }
 
     pub fn insert(&mut self, enclosing_box: BoundingBox, page_id: u32) {
-        let new_node = Node::new(enclosing_box, page_id);
+        let new_node = Node::from_bounding_box(enclosing_box, page_id);
         if self.is_empty() {
             self.set_root(new_node);
         } else if let Some(root) = &mut self.root {
@@ -123,8 +166,8 @@ impl BoundingBoxKDTree {
         let dimension = depth % 4;
 
         // Compare based on the current dimension
-        let current_value = node.enclosing_box.get_dimension(dimension);
-        let new_value = new_node.enclosing_box.get_dimension(dimension);
+        let current_value = node.get_dimension(dimension);
+        let new_value = new_node.get_dimension(dimension);
 
         if new_value < current_value {
             match &mut node.left {
@@ -157,11 +200,11 @@ impl BoundingBoxKDTree {
     }
 
     fn query_recursive(depth: usize, node: &Node, query_box: &BoundingBox, results: &mut Vec<u32>) {
-        // Check if node's enclosing box is fully within query box
-        if node.enclosing_box.is_within(query_box) {
+        // Check if node is fully within query box
+        if node.is_within(query_box) {
             // All individual boxes in this page are guaranteed to be within query
             results.push(node.page_id);
-        } else if node.enclosing_box.overlaps(query_box) {
+        } else if node.overlaps(query_box) {
             // Partial overlap - need to inspect individual boxes in the page
             // For now, we collect the page_id (in real implementation, you'd fetch and filter)
             results.push(node.page_id);
@@ -170,7 +213,7 @@ impl BoundingBoxKDTree {
 
         // Determine which children to visit based on current dimension split
         let dimension = depth % 4;
-        let split_value = node.enclosing_box.get_dimension(dimension);
+        let split_value = node.get_dimension(dimension);
 
         // Check if left subtree could contain relevant results
         let query_min = match dimension {
@@ -243,7 +286,7 @@ impl BoundingBoxKDTree {
 
     fn calculate_bounds(&self) -> BoundingBox {
         if let Some(root) = &self.root {
-            let mut bounds = root.enclosing_box.clone();
+            let mut bounds = root.to_bounding_box();
             self.expand_bounds(root, &mut bounds);
 
             // Add some padding
@@ -260,7 +303,8 @@ impl BoundingBoxKDTree {
     }
 
     fn expand_bounds(&self, node: &Node, bounds: &mut BoundingBox) {
-        *bounds = bounds.union(&node.enclosing_box);
+        let node_bounds = node.to_bounding_box();
+        *bounds = bounds.union(&node_bounds);
 
         if let Some(left) = &node.left {
             self.expand_bounds(left, bounds);
@@ -280,14 +324,10 @@ impl BoundingBoxKDTree {
         svg: &mut String,
     ) {
         // Transform coordinates from world space to SVG space
-        let x1 = ((node.enclosing_box.xmin - bounds.xmin) / (bounds.xmax - bounds.xmin))
-            * svg_width as f64;
-        let y1 = ((bounds.ymax - node.enclosing_box.ymax) / (bounds.ymax - bounds.ymin))
-            * svg_height as f64; // Flip Y
-        let x2 = ((node.enclosing_box.xmax - bounds.xmin) / (bounds.xmax - bounds.xmin))
-            * svg_width as f64;
-        let y2 = ((bounds.ymax - node.enclosing_box.ymin) / (bounds.ymax - bounds.ymin))
-            * svg_height as f64; // Flip Y
+        let x1 = ((node.xmin - bounds.xmin) / (bounds.xmax - bounds.xmin)) * svg_width as f64;
+        let y1 = ((bounds.ymax - node.ymax) / (bounds.ymax - bounds.ymin)) * svg_height as f64; // Flip Y
+        let x2 = ((node.xmax - bounds.xmin) / (bounds.xmax - bounds.xmin)) * svg_width as f64;
+        let y2 = ((bounds.ymax - node.ymin) / (bounds.ymax - bounds.ymin)) * svg_height as f64; // Flip Y
 
         let width = x2 - x1;
         let height = y2 - y1;
@@ -436,5 +476,25 @@ mod tests {
 
         assert!(results.contains(&1));
         assert!(results.contains(&2));
+    }
+
+    #[test]
+    fn test_node_bounding_box_methods() {
+        let node = Node::new(1.0, 2.0, 3.0, 4.0, 42);
+        let query = BoundingBox::new(0.0, 1.0, 4.0, 5.0);
+
+        assert!(node.overlaps(&query));
+        assert!(node.is_within(&query)); // Node is actually within the query box
+
+        let bbox = node.to_bounding_box();
+        assert_eq!(bbox.xmin, 1.0);
+        assert_eq!(bbox.ymin, 2.0);
+        assert_eq!(bbox.xmax, 3.0);
+        assert_eq!(bbox.ymax, 4.0);
+
+        // Test a case where node is NOT within query
+        let smaller_query = BoundingBox::new(1.5, 2.5, 2.5, 3.5);
+        assert!(node.overlaps(&smaller_query));
+        assert!(!node.is_within(&smaller_query)); // Node extends beyond this smaller query
     }
 }
