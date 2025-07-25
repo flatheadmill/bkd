@@ -140,6 +140,34 @@ The project follows an **incremental, research-driven approach**:
 - **Lucene References**: Include links/references to corresponding Lucene implementations
 - **README Updates**: Keep README concise, move detailed analysis to diary
 
+## Development References
+
+Use `external.sh` to obtain a copy of Tantivy and Lucene for refernece by AI assistants.
+
+### Tantivy Source Code
+
+From the project root Tantivy is located at `external/tantivy`.
+
+### Lucene Source Code
+
+From the project root Lucene is located at `external/lucene`.
+
+The complete Apache Lucene source is available at `external/lucene/` for algorithm reference:
+- **BKD Implementation**: `external/lucene/lucene/core/src/java/org/apache/lucene/util/bkd/`
+- **Document Field Types**: `external/lucene/lucene/core/src/java/org/apache/lucene/document/`
+- **Key Files**:
+  - `BKDConfig.java` - Dimensional configuration (note: 7D storage, 4D indexing for shapes)
+  - `ShapeField.java` - Triangle tessellation encoding
+  - `IntPoint.java`, `LatLonPoint.java` - Numeric point implementations
+
+### Searching Patterns
+```bash
+# Find BKD-related files
+find external/lucene -name "*BKD*" -o -name "*Point*" -o -name "*Shape*"
+
+# Search for specific patterns
+grep -r "BKDConfig" external/lucene --include="*.java"
+
 ---
 
 *This library is part of a larger geospatial search pipeline: BKD → Tantivy → pg_search → PostgreSQL*
