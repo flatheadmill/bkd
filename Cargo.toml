@@ -5,5 +5,11 @@ edition = "2024"
 
 [dependencies]
 
+[dev-dependencies]
+# Tantivy for testing memory mapping and compression integration
+tantivy = "0.22"
+# Temporary directory support for testing file-based storage
+tempfile = "3.0"
+
 [lints.clippy]
 all = "allow"

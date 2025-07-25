@@ -864,4 +864,54 @@ mod tests {
             result_data.contains(&3)
         );
     }
+
+    #[test]
+    fn test_tantivy_components_availability() {
+        #[cfg(test)]
+        {
+            // Test that we can access Tantivy's key components for future TantivyLinker implementation
+            use tantivy::directory::{MmapDirectory, RamDirectory};
+
+            // Test memory-mapped directory (for file-based node storage)
+            let _mmap_directory = MmapDirectory::create_from_tempdir().unwrap();
+
+            // Test in-memory directory (for testing)
+            let _ram_directory = RamDirectory::create();
+
+            // This test verifies we can access the components we identified as general-purpose:
+            // - MmapDirectory: File-based storage with memory mapping
+            // - RamDirectory: In-memory storage for testing
+            // Future: We'll also test OwnedBytes and compression components
+            println!("Tantivy components test: Memory mapping and RAM directories available");
+        }
+    }
+
+    #[test]
+    fn test_tantivy_general_purpose_components() {
+        #[cfg(test)]
+        {
+            // Test the specific general-purpose components we identified:
+            // 1. OwnedBytes for memory management
+            // 2. Compression algorithms (when available with feature flags)
+
+            use tantivy::directory::OwnedBytes;
+
+            // Test OwnedBytes - general-purpose memory management
+            let test_data = vec![1u8, 2, 3, 4, 5];
+            let owned_bytes = OwnedBytes::new(test_data);
+            assert_eq!(owned_bytes.len(), 5);
+            assert_eq!(owned_bytes.as_slice(), &[1, 2, 3, 4, 5]);
+
+            // Test slicing - important for block-based node storage
+            let slice = owned_bytes.slice(1..4);
+            assert_eq!(slice.as_slice(), &[2, 3, 4]);
+
+            println!("Tantivy OwnedBytes test: Memory management primitives working");
+
+            // Future tests will add:
+            // - Compression/decompression with LZ4 and Zstd
+            // - File I/O operations with MmapDirectory
+            // - Integration with our NodeLinker trait
+        }
+    }
 }
