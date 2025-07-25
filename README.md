@@ -16,22 +16,20 @@ This library implements a complete geospatial search system based on Lucene's BK
 This project prioritizes **comprehensive documentation** for long-term maintainability:
 
 - **Algorithm Documentation**: Each major function includes detailed comments explaining the mathematical and geometric reasoning
+- **Development Diary**: Technical decisions, research findings, and architectural discussions tracked in [`diary.md`](diary.md)
 - **Lucene Correspondence**: Code comments explicitly reference equivalent Lucene implementations where applicable
-- **Step-by-Step Explanations**: Complex algorithms (like triangle encoding) are broken down into numbered steps
-- **Geometric Intuition**: Spatial algorithms include geometric explanations, not just code implementation
-- **Context Preservation**: README updates accompany all significant changes to maintain project continuity
+- **Context Preservation**: README and diary updates accompany all significant changes
 
 ## Current Implementation Status
 
 ### ✅ Completed Components
 
 #### Triangle Encoding System (`src/bin/triangle.rs`)
-- **7-dimensional triangle representation** (28 bytes total)
+- **7-dimensional triangle representation** (28 bytes total) - **100% Lucene compatible**
 - **Canonical form rotation** ensuring consistent encoding regardless of input vertex order
 - **Edge flag preservation** for original polygon shape reconstruction
 - **Sortable byte encoding** following Lucene's `NumericUtils` pattern
 - **Complete round-trip encoding/decoding** with geometric orientation validation
-- **Comprehensive algorithm documentation** with step-by-step encoding process explanation
 
 #### KD-Tree Foundation (`src/tree.rs`, `src/arena.rs`)
 - **Arena-based memory management** for efficient node allocation
@@ -39,52 +37,41 @@ This project prioritizes **comprehensive documentation** for long-term maintaina
 - **Generic point structure** supporting n-dimensional coordinates
 - **Tree insertion** with automatic splitting when blocks exceed capacity
 
-#### Visualization and Testing (`src/print.rs`)
-- **Tree structure visualization** with indented output showing internal/leaf nodes
-- **Complete test suite** covering encoding round-trips and geometric operations
-- **Multiple evolutionary implementations** in `src/attic/` showing development progression
-
 ### 🔄 In Progress
 
-#### Research and Planning
-- **Source code access strategy** for deep Lucene and Tantivy inspiration
-- **Phase-by-phase development approach** following Tantivy's original methodology
-- **Integration architecture** planning for minimal Tantivy modification
+- **Source code analysis** of Lucene BKD implementation (see [`diary.md`](diary.md))
+- **Tantivy integration planning** based on architecture research
+- **Generic KD-Tree** extension to support arbitrary dimensions
 
 ### 📋 Next Development Phases
 
 #### Phase 1: Foundation Enhancement
 - **Generic KD-Tree** supporting arbitrary dimensions beyond current 2D
+- **BKD Configuration** system matching Lucene's parameters
 - **Tessellation integration** using existing Rust tessellation crates
-- **Triangle encoding refinement** with additional geometric primitives
 
 #### Phase 2: Block KD-Tree Core
-- **Lucene BKDWriter/BKDReader adaptation** studying Java implementation patterns
-- **Page-based storage system** for disk-based indexing performance
-- **Leaf node optimization** with configurable block sizes and splitting strategies
-- **Tree construction algorithms** optimized for Rust memory patterns
+- **BKDWriter/BKDReader** implementation following Lucene patterns
+- **Page-based storage** system for disk-based indexing performance
+- **Tree construction** algorithms optimized for Rust memory patterns
 
-#### Phase 3: Query Processing
-- **Spatial query operations**: Point-in-polygon, bounding box intersection, range queries
-- **Query optimization** leveraging Rust's zero-cost abstractions
-- **Integration points** with Tantivy's existing query processing pipeline
+#### Phase 3: Tantivy Integration
+- **Spatial field types** (`LatLonShape`, `XYShape`) for Tantivy schema
+- **Spatial queries** integrated with Tantivy's query processing pipeline
+- **Performance optimization** leveraging Tantivy's FastField infrastructure
 
 ## Architecture Decisions
 
-### Memory Management
-- **Arena allocation** chosen over Box/Rc for better cache locality and reduced fragmentation
-- **Node IDs** instead of pointers for serialization compatibility and memory safety
+### Core Design Principles
+- **Library-first design**: Standalone BKD implementation with clean Tantivy integration layer
+- **Lucene compatibility**: Maintain algorithmic compatibility for proven performance
+- **Arena allocation**: Chosen for better cache locality and reduced fragmentation
+- **Documentation-driven**: Comprehensive documentation for long-term maintainability
 
-### Geometric Encoding
-- **7-dimensional approach** following Lucene's proven spatial indexing methodology
-- **Sortable byte representation** ensuring proper ordering for tree construction and queries
-- **Canonical form** eliminating duplicate representations of identical triangles
-
-### Development Philosophy
-- **Incremental approach** inspired by how Tantivy was originally built from Lucene concepts
-- **Rust-native optimizations** while maintaining algorithmic compatibility with Lucene
-- **Library-first design** enabling clean integration into existing search ecosystems
-- **Documentation-driven development** ensuring long-term maintainability and knowledge transfer
+### Technical Compatibility
+- **Triangle Encoding**: 100% compatible with Lucene's `ShapeField.encodeTriangle()`
+- **BKD Configuration**: Target `BKDConfig(7, 4, 4, 512)` matching Lucene shapes
+- **Sortable Bytes**: Identical to Lucene's `NumericUtils.intToSortableBytes()`
 
 ## Code Organization
 
@@ -95,14 +82,12 @@ src/
 ├── arena.rs             # Memory arena for efficient node management
 ├── print.rs             # Tree visualization and debugging utilities
 ├── bin/
-│   └── triangle.rs      # Complete triangle encoding/decoding system (fully documented)
-└── attic/              # Development history and experimental implementations
-    ├── 00_kd.rs        # Basic KD-tree with recursive Box allocation
-    ├── 01_block_kd.rs  # Generic block-based KD-tree with const generics
-    └── 02_block_kd_print.rs # Block KD-tree with visualization
+│   └── triangle.rs      # Complete triangle encoding/decoding system
+└── attic/              # Experimental implementations and development history
 external/               # Source code references (not in git)
 ├── lucene/            # Apache Lucene source for algorithm reference
 └── tantivy/           # Tantivy source for integration planning
+diary.md               # Development diary with technical decisions and research
 ```
 
 ## Usage Examples
@@ -132,36 +117,12 @@ tree.insert(Point { x: 5.0, y: 4.0 });
 tree.print();  // Visualize tree structure
 ```
 
-## Integration Strategy
-
-The library is designed for **minimal invasive integration** into Tantivy:
-
-1. **Library Independence**: Core BKD functionality works standalone
-2. **Tantivy Adapter Layer**: Separate integration module handling Tantivy-specific concerns
-3. **Query Integration**: Hooks into Tantivy's existing query processing without major architecture changes
-4. **Incremental Adoption**: Can be introduced gradually alongside existing Tantivy features
-
 ## Performance Characteristics
 
 - **Encoding**: O(1) triangle to 7D point conversion
 - **Tree Construction**: O(n log n) with configurable block sizes for cache optimization
 - **Spatial Queries**: O(log n) average case with geometric pruning
 - **Memory Usage**: Arena allocation reduces fragmentation vs individual Box allocation
-
-## Dependencies
-
-- **Standard Library Only**: Core implementation uses no external dependencies
-- **Future Dependencies**: Will integrate with tessellation crates and potentially Tantivy's existing infrastructure
-
-## Development History
-
-This codebase represents an evolutionary approach to BKD implementation:
-
-1. **Basic KD-Tree** (`00_kd.rs`): Traditional recursive implementation
-2. **Block KD-Tree** (`01_block_kd.rs`): Introduction of configurable block sizes
-3. **Visualization** (`02_block_kd_print.rs`): Adding debugging and analysis tools
-4. **Current Architecture**: Arena-based memory management with separation of concerns
-5. **Documentation Phase**: Comprehensive algorithm documentation for long-term maintainability
 
 ## Contributing
 
@@ -170,17 +131,17 @@ The project follows an **incremental, research-driven approach**:
 1. Study Lucene's implementation patterns deeply
 2. Adapt algorithms to leverage Rust's strengths (memory safety, zero-cost abstractions)
 3. Maintain compatibility with Tantivy's architecture philosophy
-4. Prioritize performance while ensuring correctness
-5. **Document everything** - algorithms, decisions, and architectural reasoning
+4. **Document everything** - see [`diary.md`](diary.md) for detailed technical discussions
 
 ### Documentation Guidelines
 
 - **Algorithm Comments**: Explain the mathematical reasoning, not just the code
+- **Diary Entries**: Record architectural decisions and research findings
 - **Lucene References**: Include links/references to corresponding Lucene implementations
-- **Step Numbering**: Break complex processes into clearly numbered steps
-- **Geometric Intuition**: For spatial algorithms, include ASCII diagrams or geometric explanations
-- **Update README**: Significant changes should include corresponding README updates
+- **README Updates**: Keep README concise, move detailed analysis to diary
 
 ---
 
 *This library is part of a larger geospatial search pipeline: BKD → Tantivy → pg_search → PostgreSQL*
+
+*For detailed technical analysis and architectural decisions, see [`diary.md`](diary.md)*
