@@ -201,3 +201,87 @@ Moving forward from our Lucene/Tantivy analysis, ready to begin implementation o
 ---
 
 *New workflow established: chronological diary entries preserve authentic development progression*
+
+## Entry 3: Production System Analysis and Strategic Pivot
+**Date**: July 25, 2025 (Evening Session)
+**Session**: Lucene IntPoint analysis and practical indexing strategy evaluation
+
+### 🔍 Critical Insights About Real-World Numeric Indexing
+
+#### Lucene's IntPoint: The 1D BKD Reality Check
+
+**Key Discovery**: Examined `IntPoint.java` - Lucene uses full BKD tree infrastructure even for single-dimensional integers:
+
+```java
+// Even 1D integers use spatial data structures
+type.setDimensions(numDims, Integer.BYTES); // numDims=1 still uses BKD
+NumericUtils.intToSortableBytes(value, dest, offset); // Sortable encoding
+```
+
+**What IntPoint Actually Does**:
+- ❌ **NOT for sorting numerics** - that's handled by DocValues/SortField
+- ✅ **FOR fast range filtering** - eliminate non-matching docs quickly
+- ✅ **FOR spatial consistency** - unified approach across all dimensional data
+- ✅ **FOR multi-dimensional ranges** - genuine spatial queries
+
+#### The Tantivy Reality Check
+
+**User's Crucial Insight**:
+> "Tantivy already has a strategy for storing numeric fields and searching by them. This makes me think that this Lucene solution of a 1-dimensional kd-tree is probably not of much use to Tantivy."
+
+**Validation**: Absolutely correct! Modern search engines (including Tantivy) have mature solutions:
+- **Inverted indexes** for exact numeric matches
+- **Doc values/FastFields** for sorting and aggregations
+- **Specialized range structures** (simpler than KD-trees) for 1D ranges
+- **Bitmap indexes** for certain numeric patterns
+
+### 🎯 Strategic Architecture Pivot
+
+#### What We Should NOT Build
+1. **Generic 1D numeric indexing** - Tantivy already solves this efficiently
+2. **Replacement for existing range queries** - don't compete with mature solutions
+3. **Java-specific architectural patterns** - Lucene's choices aren't universally optimal
+
+#### What We SHOULD Focus On
+1. **Multi-dimensional spatial queries** - genuine KD-tree sweet spot
+2. **4D bounding box optimization** - our original use case remains valid
+3. **Geometric shape indexing** - where existing tools fall short
+4. **Real spatial problems** - lat/lon, 3D coordinates, time-space combinations
+
+### 🧠 The Lesson: Specialized vs Universal Solutions
+
+**Lucene's Architectural Choice**: Use BKD trees for ALL point data (1D-8D) for consistency
+**Other Engines' Choice**: Use optimal data structure for each use case
+**Our Choice**: Excel at spatial queries, leverage existing tools for simple numerics
+
+#### Production System Insights
+- **NearestNeighbor.java**: 2D lat/lon search - this is the real value proposition
+- **Multi-dimensional ranges**: Date + price + category - legitimate KD-tree use case
+- **Shape queries**: Polygons, complex geometries - our competitive advantage
+
+### 📋 Revised Implementation Priorities
+
+1. **Perfect the 4D bounding box KD-tree** - solve the original problem excellently
+2. **Add 2D/3D geographic support** - follow Lucene's proven patterns
+3. **Implement shape indexing** - triangulation and polygon support
+4. **Integrate with existing Tantivy numerics** - complement, don't replace
+
+### 💡 Key Architectural Principle Established
+
+> **"Don't build what already exists excellently - build what the world needs and doesn't have yet"**
+
+The real value of KD-trees in production systems is **spatial/geometric queries**, not replacing mature 1D numeric indexing. Our 4D bounding box use case remains the right target.
+
+### 🌐 Additional Context: HNSW in Lucene
+
+**Important Note**: Lucene also uses **HNSW (Hierarchical Navigable Small World)** for vector similarity search:
+- **Use Case**: Dense vector similarity (embeddings, neural search)
+- **Data Structure**: Graph-based, not tree-based like BKD
+- **Purpose**: Approximate nearest neighbor in high-dimensional spaces
+- **Relationship to BKD**: Complementary - HNSW for semantic similarity, BKD for geometric/spatial queries
+
+This reinforces our spatial focus: BKD trees and HNSW serve different but equally important roles in modern search systems. Our 4D bounding box optimization sits perfectly in the geometric query niche.
+
+---
+
+*Strategic pivot complete: From generic numeric solution to specialized spatial indexing*
