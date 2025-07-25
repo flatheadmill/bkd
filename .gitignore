@@ -1,5 +1,6 @@
 # Rust/Cargo generated files
 /target/
+/external/
 Cargo.lock
 
 # IDE and editor files
