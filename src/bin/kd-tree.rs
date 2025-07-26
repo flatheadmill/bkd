@@ -19,6 +19,7 @@ and provides a foundation for Tantivy integration.
 use bkd::spatial::{Point, SpatialPoint};
 use bkd::storage::{Node, NodeLinker};
 use bkd::{BoundingBox, InMemoryLinker, NodeArena, insert_node, spatial_search};
+use bkd::search::{tree_to_svg, add_query_to_svg};
 
 fn main() {
     println!("KD-tree implementation with NodeLinker abstraction and spatial search");
@@ -70,6 +71,23 @@ fn main() {
             data, point.xmin, point.ymin, point.xmax, point.ymax
         );
     }
+
+    // Generate SVG visualization
+    println!("\n=== SVG Visualization Demo ===");
+    let mut svg = tree_to_svg(&linker, Some(root), 800, 600);
+
+    // Add query overlay for downtown search
+    let svg_bounds = BoundingBox::new(0.0, 0.0, 12.0, 10.0); // Estimated bounds
+    add_query_to_svg(&mut svg, &downtown_query, &svg_bounds, 800, 600);
+
+    // Write SVG to file
+    use std::fs::write;
+    match write("kdtree_demo.svg", &svg) {
+        Ok(_) => println!("SVG visualization saved to 'kdtree_demo.svg'"),
+        Err(e) => println!("Failed to write SVG file: {}", e),
+    }
+
+    println!("You can open the SVG file in a web browser to view the tree visualization");
 }
 
 #[cfg(test)]

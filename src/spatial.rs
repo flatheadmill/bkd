@@ -41,6 +41,29 @@ impl BoundingBox {
             ymax,
         }
     }
+
+    /// Return a new bounding box with the specified dimension set to a new value.
+    /// Used for bounds calculation in SVG rendering.
+    pub fn with_dimension(&self, dim: usize, value: f64) -> Self {
+        match dim {
+            0 => BoundingBox::new(value, self.ymin, self.xmax, self.ymax),
+            1 => BoundingBox::new(self.xmin, value, self.xmax, self.ymax),
+            2 => BoundingBox::new(self.xmin, self.ymin, value, self.ymax),
+            3 => BoundingBox::new(self.xmin, self.ymin, self.xmax, value),
+            _ => panic!("Invalid dimension: {}", dim),
+        }
+    }
+
+    /// Compute union of two bounding boxes (enclosing box).
+    /// Used for calculating overall bounds that contain multiple boxes.
+    pub fn union(&self, other: &BoundingBox) -> BoundingBox {
+        BoundingBox {
+            xmin: self.xmin.min(other.xmin),
+            ymin: self.ymin.min(other.ymin),
+            xmax: self.xmax.max(other.xmax),
+            ymax: self.ymax.max(other.ymax),
+        }
+    }
 }
 
 impl Point for BoundingBox {

@@ -2,6 +2,7 @@
 /target/
 /external/
 Cargo.lock
+kdtree_demo.svg
 
 # IDE and editor files
 .vscode/
