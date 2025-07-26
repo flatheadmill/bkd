@@ -1,18 +1,21 @@
 /*
-BKD SPATIAL INDEXING DEMONSTRATION
+BOUNDING BOX KD-TREE DEMONSTRATION
 
-This binary demonstrates the BKD spatial indexing library in action, showing:
-- Storage-agnostic KD-tree algorithms with NodeLinker abstraction
-- Spatial search with dimensional pruning
-- Integration patterns for Tantivy components
+This binary demonstrates creating and using KD-trees with bounding box data,
+showing how to build spatial indexes for rectangular regions:
 
-The core library code has been modularized into:
-- bkd::spatial - Point traits and BoundingBox implementation
-- bkd::storage - NodeArena, NodeLinker trait, InMemoryLinker
-- bkd::search - spatial_search and insert_node algorithms
+- BoundingBox spatial data with 4D coordinates (xmin, ymin, xmax, ymax)
+- Storage-agnostic KD-tree algorithms using NodeLinker abstraction
+- Spatial search with dimensional pruning for geographic/geometric queries
+- SVG visualization of tree structure and search queries
 
-This example shows how the same algorithms work with different storage backends
-and provides a foundation for Tantivy integration.
+The core library modules used:
+- bkd::spatial - BoundingBox type implementing Point and SpatialPoint traits
+- bkd::storage - NodeArena and InMemoryLinker for memory-based storage
+- bkd::search - spatial_search, insert_node, and SVG visualization functions
+
+This example demonstrates the fundamental bounding box use case for spatial
+indexing, which forms the foundation for more complex geometric data types.
 */
 
 // Import library modules
@@ -22,7 +25,7 @@ use bkd::storage::{Node, NodeLinker};
 use bkd::{BoundingBox, InMemoryLinker, NodeArena, insert_node, spatial_search};
 
 fn main() {
-    println!("KD-tree implementation with NodeLinker abstraction and spatial search");
+    println!("Bounding Box KD-tree demonstration with NodeLinker abstraction");
     println!("Run `cargo test` to execute the test suite");
 
     // Demonstrate spatial search functionality
