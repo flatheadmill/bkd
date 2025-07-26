@@ -100,3 +100,37 @@ impl SpatialPoint for BoundingBox {
             || self.ymin > query.ymax)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bounding_box_point_trait() {
+        let bbox = BoundingBox::new(1.0, 2.0, 3.0, 4.0);
+
+        assert_eq!(bbox.get_dimension(0), 1.0); // xmin
+        assert_eq!(bbox.get_dimension(1), 2.0); // ymin
+        assert_eq!(bbox.get_dimension(2), 3.0); // xmax
+        assert_eq!(bbox.get_dimension(3), 4.0); // ymax
+        assert_eq!(bbox.dimensions(), 4);
+    }
+
+    #[test]
+    fn test_bounding_box_spatial_operations() {
+        let bbox1 = BoundingBox::new(1.0, 1.0, 3.0, 3.0);
+        let bbox2 = BoundingBox::new(2.0, 2.0, 4.0, 4.0); // Overlaps bbox1
+        let bbox3 = BoundingBox::new(0.0, 0.0, 5.0, 5.0); // Contains bbox1
+        let bbox4 = BoundingBox::new(10.0, 10.0, 12.0, 12.0); // No overlap
+
+        // Test overlaps
+        assert!(bbox1.overlaps(&bbox2));
+        assert!(bbox1.overlaps(&bbox3));
+        assert!(!bbox1.overlaps(&bbox4));
+
+        // Test is_within
+        assert!(bbox1.is_within(&bbox3));
+        assert!(!bbox1.is_within(&bbox2));
+        assert!(!bbox1.is_within(&bbox4));
+    }
+}
