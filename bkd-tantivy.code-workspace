@@ -1,0 +1,297 @@
+{
+  "folders": [
+    {
+      "name": "BKD Library (Main)",
+      "path": "."
+    },
+    {
+      "name": "Tantivy Fork (Integration)",
+      "path": "../tantivy-fork"
+    },
+    {
+      "name": "Tantivy Source (Reference)",
+      "path": "./external/tantivy"
+    },
+    {
+      "name": "Lucene Reference",
+      "path": "./external/lucene"
+    }
+  ],
+  "settings": {
+    "window.openInNewWindow": "off",
+    "files.exclude": {
+      "external/tantivy/target/**": true,
+      "external/lucene/build/**": true,
+      "external/lucene/.gradle/**": true,
+      "target/**": true
+    },
+    "search.exclude": {
+      "external/tantivy/target/**": true,
+      "external/lucene/build/**": true,
+      "external/lucene/.gradle/**": true,
+      "target/**": true,
+      "../tantivy-fork/target/**": true
+    },
+    "rust-analyzer.linkedProjects": [
+      "./Cargo.toml",
+      "../tantivy-fork/Cargo.toml",
+      "./external/tantivy/Cargo.toml"
+    ],
+    "rust-analyzer.checkOnSave.allTargets": false,
+    "rust-analyzer.cargo.buildScripts.enable": true,
+    "rust-analyzer.procMacro.enable": true,
+    "files.associations": {
+      "*.rs": "rust",
+      "*.toml": "toml"
+    },
+    "editor.rulers": [100],
+    "editor.formatOnSave": true,
+    "rust-analyzer.assist.importGranularity": "module",
+    "rust-analyzer.completion.addCallArgumentSnippets": true,
+    "rust-analyzer.completion.addCallParenthesis": true,
+    "rust-analyzer.inlayHints.enable": true,
+    "rust-analyzer.inlayHints.parameterHints": true,
+    "rust-analyzer.inlayHints.typeHints": true,
+    "rust-analyzer.hover.actions.enable": true,
+    "rust-analyzer.hover.documentation": true,
+    "github.copilot.enable": {
+      "*": true,
+      "yaml": false,
+      "plaintext": false
+    },
+    "github.copilot.advanced": {},
+    "workbench.startupEditor": "none"
+  },
+  "extensions": {
+    "recommendations": [
+      "rust-lang.rust-analyzer",
+      "tamasfe.even-better-toml",
+      "serayuzgur.crates",
+      "vadimcn.vscode-lldb",
+      "ms-vscode.hexdump",
+      "ms-vscode.vscode-json"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "BKD: Build Library",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["build"],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:BKD Library (Main)}"
+        },
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "BKD: Test All",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["test", "--", "--nocapture"],
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:BKD Library (Main)}"
+        },
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "BKD: Run KD-Tree Demo",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["run", "--bin", "kd-tree"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:BKD Library (Main)}"
+        },
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Tantivy: Build",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["build"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:Tantivy Source}"
+        },
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Tantivy: Test Specific Module",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["test", "${input:testModule}", "--", "--nocapture"],
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:Tantivy Source}"
+        },
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Tantivy Fork: Build with Spatial",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["build"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:Tantivy Fork (Integration)}"
+        },
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Tantivy Fork: Test Spatial Integration",
+        "type": "shell",
+        "command": "cargo",
+        "args": ["test", "spatial", "--", "--nocapture"],
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:Tantivy Fork (Integration)}"
+        },
+        "problemMatcher": ["$rustc"]
+      },
+      {
+        "label": "Tantivy Fork: Sync with Upstream",
+        "type": "shell",
+        "command": "git",
+        "args": ["fetch", "upstream", "&&", "git", "rebase", "upstream/main"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:Tantivy Fork (Integration)}"
+        }
+      },
+      {
+        "label": "Search Tantivy for Pattern",
+        "type": "shell",
+        "command": "rg",
+        "args": ["--type", "rust", "--context", "3", "${input:searchPattern}"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:Tantivy Source (Reference)}"
+        }
+      },
+      {
+        "label": "Search Lucene for Pattern",
+        "type": "shell",
+        "command": "find",
+        "args": [".", "-name", "*.java", "-exec", "grep", "-l", "${input:searchPattern}", "{}", ";"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "options": {
+          "cwd": "${workspaceFolder:Lucene Reference}"
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "id": "testModule",
+        "description": "Test module to run",
+        "default": "schema",
+        "type": "promptString"
+      },
+      {
+        "id": "searchPattern",
+        "description": "Pattern to search for",
+        "default": "FieldType",
+        "type": "promptString"
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Debug BKD KD-Tree",
+        "cargo": {
+          "args": ["build", "--bin=kd-tree"],
+          "filter": {
+            "name": "kd-tree",
+            "kind": "bin"
+          }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder:BKD Library (Main)}"
+      },
+      {
+        "type": "lldb",
+        "request": "launch",
+        "name": "Debug BKD Tests",
+        "cargo": {
+          "args": ["test", "--no-run", "--bin=kd-tree"],
+          "filter": {
+            "name": "kd-tree",
+            "kind": "bin"
+          }
+        },
+        "args": [],
+        "cwd": "${workspaceFolder:BKD Library (Main)}"
+      }
+    ]
+  }
+}

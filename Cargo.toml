@@ -3,13 +3,25 @@ name = "bkd"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "bkd"
+path = "src/lib.rs"
+
 [dependencies]
+# Optional Tantivy integration
+tantivy = { version = "0.22", optional = true }
+bincode = { version = "1.3", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 # Tantivy for testing memory mapping and compression integration
 tantivy = "0.22"
 # Temporary directory support for testing file-based storage
 tempfile = "3.0"
+
+[features]
+default = []
+tantivy = ["dep:tantivy", "dep:bincode", "dep:serde"]
 
 [lints.clippy]
 all = "allow"
